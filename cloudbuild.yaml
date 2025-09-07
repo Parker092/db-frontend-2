@@ -1,0 +1,57 @@
+substitutions:
+  _REGION: "us-central1"
+  _SERVICE: "db-frontend-2"
+  _REPO_NAME: "app-repo"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
+
+steps:
+  # Install deps & run tests
+  - name: gcr.io/cloud-builders/npm
+    id: "Install"
+    args: ["ci"]
+
+  - name: gcr.io/cloud-builders/npm
+    id: "Test"
+    args: ["test", "--", "--ci"]
+
+  # Build container
+  - name: gcr.io/cloud-builders/docker
+    id: "Build image"
+    args:
+      [
+        "build",
+        "-t", "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
+        "."
+      ]
+
+  # Push container
+  - name: gcr.io/cloud-builders/docker
+    id: "Push image"
+    args:
+      [
+        "push",
+        "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA"
+      ]
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: "Deploy to Cloud Run"
+    entrypoint: gcloud
+    args:
+      [
+        "run","deploy","$_SERVICE",
+        "--image","$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
+        "--region","$_REGION",
+        "--platform","managed",
+        "--allow-unauthenticated",
+        "--service-account","cr-runtime-sa@${PROJECT_ID}.iam.gserviceaccount.com",
+        "--set-env-vars","INSTANCE_CONNECTION_NAME=YOUR_PROJECT:REGION:INSTANCE",
+        "--set-env-vars","DB_USER=YOUR_DB_USER",
+        "--set-env-vars","DB_NAME=YOUR_DB_NAME"
+      ]
+
+images:
+  - "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA"

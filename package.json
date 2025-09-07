@@ -1,0 +1,20 @@
+{
+    "name": "cloudrun-express-sql",
+    "version": "1.0.0",
+    "description": "Express app deployed to Cloud Run with Cloud SQL Postgres",
+    "main": "index.mjs",
+    "type": "module",
+    "scripts": {
+        "start": "node index.mjs",
+        "dev": "nodemon index.mjs",
+        "test": "echo \"No tests yet\" && exit 0"
+    },
+    "dependencies": {
+        "express": "^4.19.2",
+        "pg": "^8.11.5",
+        "@google-cloud/cloud-sql-connector": "^1.5.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0"
+    }
+}
