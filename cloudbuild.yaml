@@ -1,7 +1,7 @@
 substitutions:
   _REGION: "us-central1"
-  _SERVICE: "db-frontend-2"
-  _REPO_NAME: "app-repo"
+  _SERVICE: "db-frontend-2-cicd"
+  _REPO_NAME: "db-frontend-2-cicd-repo"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -23,8 +23,9 @@ steps:
     args:
       [
         "build",
-        "-t", "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
-        "."
+        "-t",
+        "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
+        ".",
       ]
 
   # Push container
@@ -33,7 +34,7 @@ steps:
     args:
       [
         "push",
-        "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA"
+        "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
       ]
 
   # Deploy to Cloud Run
