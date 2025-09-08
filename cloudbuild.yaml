@@ -42,15 +42,16 @@ steps:
     entrypoint: gcloud
     args:
       [
-        "run","deploy","$_SERVICE",
-        "--image","$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
-        "--region","$_REGION",
-        "--platform","managed",
+        "run", "deploy", "$_SERVICE",
+        "--image", "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
+        "--region", "$_REGION",
+        "--platform", "managed",
         "--allow-unauthenticated",
-        "--service-account","cr-runtime-sa@${PROJECT_ID}.iam.gserviceaccount.com",
-        "--set-env-vars","INSTANCE_CONNECTION_NAME=YOUR_PROJECT:REGION:INSTANCE",
-        "--set-env-vars","DB_USER=YOUR_DB_USER",
-        "--set-env-vars","DB_NAME=YOUR_DB_NAME"
+        "--service-account", "db-psql-service-account@${PROJECT_ID}.iam.gserviceaccount.com",
+        "--set-env-vars", "INSTANCE_CONNECTION_NAME=diegoayala-dev:us-central1:psql-test,DB_USER=db-psql-service-account@diegoayala-dev.iam.gserviceaccount.com,DB_NAME=psql-test_db",
+        "--network", "directvpc-test",
+        "--subnet", "directvpc-subnet-test",
+        "--vpc-egress", "all-traffic",
       ]
 
 images:
