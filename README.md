@@ -6,14 +6,12 @@ Node.js + Express + PostgreSQL demo app deployed on **Google Cloud Run** with a 
 
 ## 📦 Project Structure
 
-db-frontend-2/
-├── .dockerignore
-├── .gitignore
-├── cloudbuild.yaml   # Cloud Build pipeline definition
-├── Dockerfile        # Container build definition
-├── index.mjs         # Express.js app
-├── package.json
-├── package-lock.json
+db-frontend-2/ \
+├── cloudbuild.yaml   # Cloud Build pipeline definition \
+├── Dockerfile        # Container build definition \
+├── index.mjs         # Express.js app \
+├── package.json \
+├── package-lock.json \
 └── README.md
 
 ---
