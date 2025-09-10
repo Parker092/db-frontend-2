@@ -2,10 +2,13 @@ substitutions:
   _REGION: "us-central1"
   _SERVICE: "db-frontend-2-cicd"
   _REPO_NAME: "db-frontend-2-cicd-repo"
+  _PRIVATEPOOL_ID: "private-pool-test"
 
 options:
   logging: CLOUD_LOGGING_ONLY
   substitutionOption: ALLOW_LOOSE
+  pool:
+    name: 'projects/$PROJECT_ID/locations/$_REGION/workerPools/$_PRIVATEPOOL_ID'
 
 steps:
   # Install deps & run tests
