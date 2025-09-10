@@ -11,10 +11,10 @@ options:
     name: 'projects/$PROJECT_ID/locations/$_REGION/workerPools/$_PRIVATEPOOL_ID'
 
 steps:
-  # Install deps & run tests
-  - name: gcr.io/cloud-builders/npm
-    id: "Install"
-    args: ["ci"]
+  # # Install deps & run tests
+  # - name: gcr.io/cloud-builders/npm
+  #   id: "Install"
+  #   args: ["ci"]
 
   - name: gcr.io/cloud-builders/npm
     id: "Test"
