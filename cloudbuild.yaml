@@ -2,7 +2,7 @@ substitutions:
   _REGION: "us-central1"
   _SERVICE: "db-frontend-2-cicd"
   _REPO_NAME: "db-frontend-2-cicd-repo"
-  _REPO_NPM_NAME: "private-npm-repo"
+  _REPO_NPM_NAME: "npm-virtual"
   _PRIVATEPOOL_ID: "private-pool-test"
 
 options:
