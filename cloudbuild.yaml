@@ -19,16 +19,23 @@ steps:
     args: ["test", "--", "--ci"]
 
   # 2. Package the entire source directory into a container image
-  - name: "gcr.io/cloud-builders/gcloud"
+  - name: "gcr.io/k8s-skaffold/pack"
     id: "Package Image"
+    entrypoint: "pack"
     args:
-      - "builds"
-      - "submit"
-      - "." # Package the current directory
-      - "--tag"
+      - "build"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
+      - "--builder=gcr.io/buildpacks/builder:v1"
+      - "--path=."
+
+  # 3. Push the container image (this step is now required)
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Push image"
+    args:
+      - "push"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
 
-  # 3. Deploy to Cloud Run
+  # 4. Deploy to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: "Deploy to Cloud Run"
     entrypoint: gcloud
