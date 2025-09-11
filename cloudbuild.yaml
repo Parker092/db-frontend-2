@@ -27,7 +27,6 @@ steps:
       - "." # Package the current directory
       - "--tag"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
-      - "--entrypoint=node index.js"
 
   # 3. Deploy to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
