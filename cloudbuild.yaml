@@ -2,7 +2,7 @@ substitutions:
   _REGION: "us-central1"
   _SERVICE: "db-frontend-2-cicd"
   _REPO_NAME: "db-frontend-2-cicd-repo"
-  _REPO_NPM_NAME: "npm-virtual"  # Use the virtual repository for all packages
+  _REPO_NPM_NAME: "npm-virtual"
   _PRIVATEPOOL_ID: "private-pool-test"
   _PROJECT_ID: "diegoayala-dev"
 
@@ -12,26 +12,26 @@ options:
     name: "projects/${_PROJECT_ID}/locations/${_REGION}/workerPools/${_PRIVATEPOOL_ID}"
 
 steps:
-  # 1. Generate config, authenticate, and install dependencies
-  - name: "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/npm-builder:latest"
+  # 1. Install dependencies using the official Node image
+  # This step replaces the broken custom builder.
+  - name: "node:20-slim"
     id: "Install Dependencies"
     entrypoint: "bash"
     args:
       - "-c"
       - |
-        # Generate the real .npmrc file from the template and substitutions
+        # Generate the real .npmrc file from the template
         sed -e "s|__REGION__|${_REGION}|g" \
             -e "s|__NPM_REPO_NAME__|${_REPO_NPM_NAME}|g" \
             -e "s|__PROJECT_ID__|${_PROJECT_ID}|g" \
             .npmrc.template > .npmrc
+        
+        # Install and then immediately run the auth helper
+        npm install -g google-artifactregistry-auth
+        /usr/local/bin/google-artifactregistry-auth --repo-config=.npmrc
 
-        # Authenticate using the newly created .npmrc
-        google-artifactregistry-auth --repo-config=.npmrc
-
-        # Install ALL dependencies into the /workspace directory
+        # Install all dependencies into the /workspace directory
         npm ci --prefix /workspace
-
-  # ... (The rest of your steps for Copy, Test, Prune, Package, and Deploy remain the same) ...
 
   # 2. Copy source code into the workspace
   - name: "gcr.io/cloud-builders/gcloud"
@@ -40,16 +40,18 @@ steps:
     args: ["-c", "cp -r . /workspace"]
 
   # 3. Run tests inside the workspace
-  - name: "gcr.io/cloud-builders/npm"
+  - name: "node:20-slim" # Use the official Node image for consistency
     id: "Test"
+    entrypoint: "npm"
     args: ["--prefix", "/workspace", "test", "--", "--ci"]
-
-  # 4. Prune development dependencies to keep the final image small
-  - name: "gcr.io/cloud-builders/npm"
+    
+  # 4. Prune development dependencies
+  - name: "node:20-slim" # Use the official Node image for consistency
     id: "Prune Dev Dependencies"
+    entrypoint: "npm"
     args: ["--prefix", "/workspace", "prune", "--production"]
 
-  # 5. Package the workspace into a container image using Buildpacks
+  # 5. Package the workspace into a container image
   - name: "gcr.io/cloud-builders/gcloud"
     id: "Package Image"
     args:
