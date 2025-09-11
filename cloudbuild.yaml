@@ -60,7 +60,6 @@
 
 # images:
 #   - "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA"
-
 substitutions:
   _REGION: "us-central1"
   _SERVICE: "db-frontend-2-cicd"
@@ -71,71 +70,78 @@ options:
   logging: CLOUD_LOGGING_ONLY
   substitutionOption: ALLOW_LOOSE
   pool:
-    name: 'projects/$PROJECT_ID/locations/$_REGION/workerPools/$_PRIVATEPOOL_ID'
+    name: "projects/$PROJECT_ID/locations/$_REGION/workerPools/$_PRIVATEPOOL_ID"
 
 steps:
-  # 1. NEW STEP: Authenticate and install dependencies from Artifact Registry
-  - name: 'gcr.io/cloud-builders/npm'
-    id: "Authenticate and Install Dependencies"
-    entrypoint: 'bash'
+  # 1. Install all dependencies into a workspace directory
+  - name: "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO_NAME}/npm-builder:latest"
+    id: "Install Dependencies"
+    entrypoint: "bash"
     args:
-      - '-c'
+      - "-c"
       - |
-        # Copy the project's .npmrc file so the build knows where the private repo is
-        cp .npmrc .
+        # Authenticate first
+        google-artifactregistry-auth --repo-config=.npmrc
 
-        # Install the authentication helper
-        npm install google-artifactregistry-auth
+        # Install ALL dependencies (including devDependencies) into the /workspace directory
+        # The --prefix flag directs the output to our staging area
+        npm ci --prefix /workspace
 
-        # Authenticate with Artifact Registry using the build's service account
-        npx google-artifactregistry-auth --repo-config=.npmrc
+  # 2. Copy source code into the workspace
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "Copy Source"
+    entrypoint: "bash"
+    args: ["-c", "cp -r . /workspace"]
 
-        # Install dependencies using the lock file for consistency
-        # This will securely fetch private packages from your Artifact Registry
-        npm ci
-
-  # 2. Run tests on the installed dependencies
-  - name: gcr.io/cloud-builders/npm
+  # 3. Run tests inside the workspace
+  - name: "gcr.io/cloud-builders/npm"
     id: "Test"
-    args: ["test", "--", "--ci"]
+    args: ["--prefix", "/workspace", "test", "--", "--ci"]
 
-  # 3. Build container image
-  - name: gcr.io/cloud-builders/docker
-    id: "Build image"
+  # 4. Prune development dependencies to keep the final image small
+  - name: "gcr.io/cloud-builders/npm"
+    id: "Prune Dev Dependencies"
+    args: ["--prefix", "/workspace", "prune", "--production"]
+
+  # 5. Package the workspace into a container image using Buildpacks
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "Package Image"
     args:
-      [
-        "build",
-        "-t",
-        "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
-        ".",
-      ]
+      - "builds"
+      - "submit"
+      - "/workspace" # The directory to package
+      - "--tag"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
+      - "--no-source" # Crucial flag: tells it to use the directory we provide
+      - "--entrypoint=node index.js" # Defines the start command for your container
 
-  # 4. Push container image to Artifact Registry
-  - name: gcr.io/cloud-builders/docker
-    id: "Push image"
-    args:
-      [
-        "push",
-        "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
-      ]
-
-  # 5. Deploy to Cloud Run
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  # 6. Deploy to Cloud Run (the 'docker push' step is no longer needed)
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: "Deploy to Cloud Run"
     entrypoint: gcloud
     args:
       [
-        "run", "deploy", "$_SERVICE",
-        "--image", "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA",
-        "--region", "$_REGION",
-        "--platform", "managed",
+        "run",
+        "deploy",
+        "$_SERVICE",
+        "--image",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}",
+        "--region",
+        "$_REGION",
+        "--platform",
+        "managed",
         "--allow-unauthenticated",
-        "--service-account", "db-psql-service-account@${PROJECT_ID}.iam.gserviceaccount.com",
-        "--set-env-vars", "INSTANCE_CONNECTION_NAME=diegoayala-dev:us-central1:psql-test,DB_USER=db-psql-service-account@diegoayala-dev.iam,DB_NAME=psql-test_db",
-        "--network", "directvpc-test",
-        "--subnet", "directvpc-subnet-test",
-        "--vpc-egress", "all-traffic",
+        "--service-account",
+        "db-psql-service-account@${PROJECT_ID}.iam.gserviceaccount.com",
+        "--set-env-vars",
+        "INSTANCE_CONNECTION_NAME=diegoayala-dev:us-central1:psql-test,DB_USER=db-psql-service-account@diegoayala-dev.iam,DB_NAME=psql-test_db",
+        "--network",
+        "directvpc-test",
+        "--subnet",
+        "directvpc-subnet-test",
+        "--vpc-egress",
+        "all-traffic",
       ]
 
 images:
-  - "$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE:$SHORT_SHA"
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
