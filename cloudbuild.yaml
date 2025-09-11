@@ -17,9 +17,8 @@ steps:
     id: "Test"
     entrypoint: "npm"
     args: ["test", "--", "--ci"]
-    
+
   # 2. Package the entire source directory into a container image
-  # The source already has everything needed (code + node_modules).
   - name: "gcr.io/cloud-builders/gcloud"
     id: "Package Image"
     args:
@@ -28,7 +27,6 @@ steps:
       - "." # Package the current directory
       - "--tag"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
-      - "--no-source"
       - "--entrypoint=node index.js"
 
   # 3. Deploy to Cloud Run
