@@ -4,6 +4,9 @@
     "description": "Express app deployed to Cloud Run with Cloud SQL Postgres",
     "main": "index.mjs",
     "type": "module",
+    "engines": {
+        "node": "20.x.x"
+    },
     "scripts": {
         "start": "node index.mjs",
         "dev": "nodemon index.mjs",
