@@ -2,14 +2,14 @@
     "name": "@private-repo/cloudrun-express-sql",
     "version": "1.0.0",
     "description": "Express app deployed to Cloud Run with Cloud SQL Postgres",
-    "main": "index.mjs",
+    "main": "index.js",
     "type": "module",
     "engines": {
         "node": "20.x.x"
     },
     "scripts": {
-        "start": "node index.mjs",
-        "dev": "nodemon index.mjs",
+        "start": "node index.js",
+        "dev": "nodemon index.js",
         "test": "echo \"No tests yet\" && exit 0",
         "artifactregistry-login": "npx google-artifactregistry-auth --repo-config=.npmrc"
     },
