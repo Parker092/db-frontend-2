@@ -1,2 +1,2 @@
-@private-repo:registry=https://__REGION__-npm.pkg.dev/${PROJECT_ID}/__NPM_REPO_NAME__/
+registry=https://__REGION__-npm.pkg.dev/${PROJECT_ID}/__NPM_REPO_NAME__/
 //__REGION__-npm.pkg.dev/${PROJECT_ID}/__NPM_REPO_NAME__/:always-auth=true
