@@ -2,6 +2,7 @@ substitutions:
   _REGION: "us-central1"
   _SERVICE: "db-frontend-2-cicd"
   _REPO_NAME: "db-frontend-2-cicd-repo"
+  _REPO_NPM_NAME: "npm-virtual"
   _PRIVATEPOOL_ID: "private-pool-test"
   _PROJECT_ID: "diegoayala-dev"
 
@@ -11,29 +12,45 @@ options:
     name: "projects/${_PROJECT_ID}/locations/${_REGION}/workerPools/${_PRIVATEPOOL_ID}"
 
 steps:
-  # 1. Run tests using the existing node_modules
-  # This now runs in the root of your checked-out source code.
+  # 1. Install PRODUCTION dependencies into a workspace directory
   - name: "node:20-slim"
-    id: "Test"
-    entrypoint: "npm"
-    args: ["test", "--", "--ci"]
+    id: "Install Dependencies"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        # Generate the real .npmrc file
+        sed -e "s|__REGION__|${_REGION}|g" \
+            -e "s|__NPM_REPO_NAME__|${_REPO_NPM_NAME}|g" \
+            -e "s|__PROJECT_ID__|${_PROJECT_ID}|g" \
+            .npmrc.template > .npmrc
 
-  # 2. Package the entire source directory into a container image
-  - name: "gcr.io/k8s-skaffold/pack"
+        # Install and run the auth helper
+        npm install -g google-artifactregistry-auth
+        /usr/local/bin/google-artifactregistry-auth --repo-config=.npmrc
+
+        # Install ONLY production dependencies into the /workspace directory
+        npm ci --only=production --prefix /workspace
+
+  # 2. Copy source code into the workspace
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "Copy Source"
+    entrypoint: "bash"
+    args: ["-c", "cp -r . /workspace"]
+
+  # NOTE: The "Test" and "Prune" steps are removed.
+
+  # 3. Package the workspace into a container image
+  - name: "gcr.io/cloud-builders/gcloud"
     id: "Package Image"
-    entrypoint: "pack"
     args:
-      - "build"
+      - "builds"
+      - "submit"
+      - "/workspace"
+      - "--tag"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
-      - "--builder=gcr.io/buildpacks/builder:v1"
-      - "--path=."
-
-  # 3. Push the container image (this step is now required)
-  - name: "gcr.io/cloud-builders/docker"
-    id: "Push image"
-    args:
-      - "push"
-      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
+      - "--no-source"
+      - "--entrypoint=node index.mjs"
 
   # 4. Deploy to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -62,6 +79,5 @@ steps:
         "--vpc-egress",
         "all-traffic",
       ]
-
 images:
   - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
