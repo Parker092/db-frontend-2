@@ -1,2 +1,2 @@
-registry=https://__REGION__-npm.pkg.dev/${PROJECT_ID}/__NPM_REPO_NAME__/
-//__REGION__-npm.pkg.dev/${PROJECT_ID}/__NPM_REPO_NAME__/:always-auth=true
+registry=https://__REGION__-npm.pkg.dev/__PROJECT_ID__/__NPM_REPO_NAME__/
+//__REGION__-npm.pkg.dev/__PROJECT_ID__/__NPM_REPO_NAME__/:always-auth=true
