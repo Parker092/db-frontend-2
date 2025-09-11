@@ -11,33 +11,27 @@ options:
     name: "projects/${_PROJECT_ID}/locations/${_REGION}/workerPools/${_PRIVATEPOOL_ID}"
 
 steps:
-  # 1. Copy source code into the workspace
-  # This now includes the node_modules folder.
-  - name: "gcr.io/cloud-builders/gcloud"
-    id: "Copy Source"
-    entrypoint: "bash"
-    args: ["-c", "cp -r . /workspace"]
-
-  # 2. Run tests using the existing node_modules
+  # 1. Run tests using the existing node_modules
+  # This now runs in the root of your checked-out source code.
   - name: "node:20-slim"
     id: "Test"
     entrypoint: "npm"
-    args: ["--prefix", "/workspace", "test", "--", "--ci"]
-
-  # 3. Package the workspace into a container image
-  # The workspace already has everything needed.
+    args: ["test", "--", "--ci"]
+    
+  # 2. Package the entire source directory into a container image
+  # The source already has everything needed (code + node_modules).
   - name: "gcr.io/cloud-builders/gcloud"
     id: "Package Image"
     args:
       - "builds"
       - "submit"
-      - "/workspace"
+      - "." # Package the current directory
       - "--tag"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE}:${SHORT_SHA}"
       - "--no-source"
       - "--entrypoint=node index.js"
 
-  # 4. Deploy to Cloud Run
+  # 3. Deploy to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: "Deploy to Cloud Run"
     entrypoint: gcloud
