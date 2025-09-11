@@ -16,12 +16,17 @@ steps:
   - name: "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO_NAME}/npm-builder:latest"
     id: "Install Dependencies"
     entrypoint: "bash"
+    # Make PROJECT_ID available to the shell script
+    env:
+      - 'PROJECT_ID=${PROJECT_ID}'
     args:
       - "-c"
       - |
         # Generate the real .npmrc file from the template and substitutions
+        # Use a different delimiter like '|' for sed to handle URLs correctly
         sed -e "s|__REGION__|${_REGION}|g" \
             -e "s|__NPM_REPO_NAME__|${_REPO_NPM_NAME}|g" \
+            -e "s|\$${PROJECT_ID}|${PROJECT_ID}|g" \
             .npmrc.template > .npmrc
 
         # Authenticate using the newly created .npmrc
